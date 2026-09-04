@@ -1,3 +1,17 @@
+# Python
 virtualenvs/
+.astro/
+.venv/
 __pycache__/
 *.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+*.chat
+
+# Generated media -- rendered from the RAW files, not source.
+# Use `git add -f <file>` if a specific one is worth committing.
+*.gif
+*.mp4
+*.jpg
+*.png
