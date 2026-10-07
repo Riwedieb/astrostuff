@@ -14,9 +14,14 @@ test('gateway serves app and module MIME types and rejects arbitrary proxy paths
 test('terrain gateway streams the exact allowlisted upstream and reports failures',async()=>{
   const original=globalThis.fetch;let requested;
   try{
-    globalThis.fetch=async(url,options)=>{requested=url;assert.equal(options.redirect,'error');return new Response('zip bytes',{headers:{'Content-Length':'9'}});};
+    globalThis.fetch=async(url,options)=>{requested=url;if(options.redirect==='error')throw new TypeError('Unsupported redirect mode');assert.equal(options.redirect,'manual');return new Response('zip bytes',{headers:{'Content-Length':'9'}});};
     const response=await worker.fetch(new Request('https://example.test/api/terrain/0.5/N47E008.zip'));
     assert.equal(requested,'https://static.routeconverter.com/sonny/dtm-0.5s/N47E008.zip');assert.equal(await response.text(),'zip bytes');assert.equal(response.headers.get('Content-Type'),'application/zip');
+    const ascona=await worker.fetch(new Request('https://example.test/api/terrain/0.5/N46E008.zip'));
+    assert.equal(requested,'https://static.routeconverter.com/sonny/dtm-0.5s/N46E008.zip');assert.equal(ascona.status,200);assert.equal(await ascona.text(),'zip bytes');
+    globalThis.fetch=async()=>new Response(null,{status:302,headers:{Location:'https://other.example/tile.zip'}});
+    const redirect=await worker.fetch(new Request('https://example.test/api/terrain/0.5/N46E008.zip'));
+    assert.equal(redirect.status,502);assert.equal(redirect.headers.get('Location'),null);
     globalThis.fetch=async()=>new Response('unavailable',{status:503});
     assert.equal((await worker.fetch(new Request('https://example.test/api/terrain/0.5/N47E008.zip'))).status,502);
   }finally{globalThis.fetch=original;}

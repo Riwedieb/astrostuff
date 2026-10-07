@@ -10,13 +10,15 @@ export default {
       if(!match||!coverage[match[1]].includes(match[2]))return new Response('Terrain tile unavailable',{status:404});
       try {
         const upstream=await fetch(`https://static.routeconverter.com/sonny/${directories[match[1]]}/${match[2]}.zip`,{
-          method:request.method,redirect:'error',signal:AbortSignal.timeout(120000),cf:{cacheTtl:604800,cacheEverything:true}
+          // workerd rejects redirect:'error' before making any network request.
+          // Manual mode plus the status check below still refuses all redirects.
+          method:request.method,redirect:'manual',signal:AbortSignal.timeout(120000),cf:{cacheTtl:604800,cacheEverything:true}
         });
-        if(!upstream.ok)return new Response('Terrain provider temporarily unavailable',{status:502});
+        if(!upstream.ok){console.error('Terrain upstream rejected',path,upstream.status);return new Response('Terrain provider temporarily unavailable',{status:502});}
         const headers=new Headers({'Content-Type':'application/zip','Cache-Control':'public, max-age=604800','X-Content-Type-Options':'nosniff'});
         const length=upstream.headers.get('Content-Length');if(length)headers.set('Content-Length',length);
         return new Response(upstream.body,{headers}); // Stream: never inflate or buffer HGT on the server.
-      }catch{return new Response('Terrain download failed; please retry',{status:502});}
+      }catch(error){console.error('Terrain fetch failed',path,error.name,String(error.message).slice(0,250));return new Response('Terrain download failed; please retry',{status:502});}
     }
     const key=path==='/'?'/index.html':path,body=ASSETS[key];
     if(body===undefined)return new Response('Not found',{status:404});
