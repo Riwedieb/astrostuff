@@ -1,3 +1,4 @@
+import {cachedTerrain} from './horizon-cache.mjs';
 import {BIN_COUNT,planTerrain,tileOrigin,sampleHgt,scanTile} from './terrain-math.mjs';
 const CACHE='messier-sonny-2024-v1';
 
@@ -84,6 +85,6 @@ export async function runTerrain(input,report,load=tile,coverage=null) {
   return profile;
 }
 if(typeof self!=='undefined')self.onmessage=async({data})=>{
-  try{self.postMessage({type:'done',profile:await runTerrain(data,message=>self.postMessage(message))});}
+  try{self.postMessage({type:'done',profile:await cachedTerrain(data,runTerrain,message=>self.postMessage(message))});}
   catch(error){self.postMessage({type:'error',text:error.message||'Terrain could not be loaded.'});}
 };

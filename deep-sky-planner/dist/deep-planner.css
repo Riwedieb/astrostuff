@@ -29,3 +29,5 @@ main h1{font-size:clamp(24px,3vw,34px);margin:0 0 10px}.setup,body.sky-active .s
   .astro-controls>.coordinate-options summary{padding:3px 0}
   .astro-controls .options-fields input{width:100%;font-size:16px}
 }
+
+#night-cache-status:empty,#sky-cache-status:empty{display:none}#night-cache-status,#sky-cache-status,#terrain-signin{font-size:14px;color:var(--muted)}

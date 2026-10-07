@@ -2,8 +2,9 @@
 const directories={'0.5':'dtm-0.5s','1':'dtm-all-1s','3':'dtm-all-3s'};
 const coverage=JSON.parse(ASSETS['/terrain/coverage.json']).tiles;
 export default {
-  async fetch(request) {
+  async fetch(request,env) {
     const url=new URL(request.url),path=url.pathname;
+    if(path==='/api/horizon')return horizonCache(request,env);
     if(!['GET','HEAD'].includes(request.method))return new Response('Method not allowed',{status:405,headers:{Allow:'GET, HEAD'}});
     if(path.startsWith('/api/terrain/')) {
       const match=/^\/api\/terrain\/(0\.5|1|3)\/([NS]\d{2}[EW]\d{3})\.zip$/.exec(path);

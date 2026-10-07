@@ -140,3 +140,21 @@ Changes to date and criteria recalculate intervals without redownloading the
 terrain. Green chart bands indicate verified intervals, amber bands geometric
 candidates. Sort by longest window, earliest best-window midpoint, name, or
 the original magnitude/size/altitude options.
+
+## Persistent terrain horizons
+
+R2 binding `HORIZONS` stores completed ray-scanned profiles through `/api/horizon`.
+The Sites dispatcher identity keys a private user namespace, allowing the same
+signed-in user to reuse horizons across devices without letting public visitors
+modify another user's terrain. Anonymous use still computes locally; the UI
+provides a dispatch-owned ChatGPT sign-in link for persistent caching.
+
+Keys include the exact coordinates, eye height, fine/standard choice and
+`sonny-2024-rays-v1` calculation/data version. Date and time are excluded. Reads
+older than 90 days are misses. Only complete 3600-bin profiles are stored; missing
+terrain is not promoted to a valid horizon. Inputs, array ranges, upload size and
+same-origin writes are checked server-side. Stored data contains only expected
+profile fields. Responses are private/no-store. Cache failures fall back to the
+existing tile scanner and appear as concise status messages. Check terrain / Retry
+bypasses a stored profile and replaces it after a successful full calculation.
+Increment the cache version after changing terrain data or scanner geometry.

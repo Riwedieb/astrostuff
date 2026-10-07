@@ -11,6 +11,6 @@ async function collect(dir,prefix='') {
 }
 await collect('dist');
 await mkdir('dist/server',{recursive:true});await mkdir('dist/.openai',{recursive:true});
-await writeFile('dist/server/index.js','const ASSETS='+JSON.stringify(assets)+';\n'+await readFile('worker/gateway.mjs','utf8'));
+await writeFile('dist/server/index.js','const ASSETS='+JSON.stringify(assets)+';\n'+await readFile('worker/horizon-cache.mjs','utf8')+'\n'+await readFile('worker/gateway.mjs','utf8'));
 await writeFile('dist/.openai/hosting.json',await readFile('.openai/hosting.json'));
 console.log(`Built Worker with ${Object.keys(assets).length} assets.`);

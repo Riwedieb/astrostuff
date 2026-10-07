@@ -34,7 +34,7 @@ function initSky(api){
       <label>Detail<select id="sky-terrain-detail"><option value="fine">Fine · up to 0.5″</option><option value="standard">Standard · 1″</option></select></label>
       <label>Observer height (m)<input id="sky-eye-height" type="number" value="2" min="0" max="10000" step="0.5"></label>
       <button class="action" id="sky-terrain-retry" hidden>Retry terrain</button>
-      <p id="sky-terrain-status" role="status">Terrain not loaded</p>
+      <span id="sky-cache-status"></span><p id="sky-terrain-status" role="status">Terrain not loaded</p>
     </div>
     <div class="sky-workspace">
       <div class="sky-stage">
@@ -99,8 +99,8 @@ function initSky(api){
       terrainWorker=new Worker(new URL('./terrain-worker.mjs',import.meta.url),{type:'module'});
       const worker=terrainWorker;
       const failed=text=>{if(worker!==terrainWorker)return;worker.terminate();terrainWorker=null;$('sky-terrain-status').textContent=`${text} Geometric horizon shown.`;$('sky-terrain-retry').hidden=false;publishTerrain();};
-      worker.onmessage=({data})=>{if(worker!==terrainWorker)return;if(data.type==='progress'){$('sky-terrain-status').textContent=data.text;window.dispatchEvent(new CustomEvent('deep:terrain-progress',{detail:data.text}));}else if(data.type==='done'){worker.terminate();terrainWorker=null;accept(data.profile);}else failed(data.text);};
-      worker.onerror=()=>failed('Terrain calculation failed.');worker.postMessage(input);
+      worker.onmessage=({data})=>{if(worker!==terrainWorker)return;if(data.type==='progress'){$('sky-terrain-status').textContent=data.text;window.dispatchEvent(new CustomEvent('deep:terrain-progress',{detail:data.text}));}else if(data.type==='cache'){$('sky-cache-status').textContent=data.text;window.dispatchEvent(new CustomEvent('deep:terrain-cache',{detail:data.text}));}else if(data.type==='done'){worker.terminate();terrainWorker=null;accept(data.profile);}else failed(data.text);};
+      worker.onerror=()=>failed('Terrain calculation failed.');worker.postMessage({...input,refresh:force});
     }catch{$('sky-terrain-status').textContent='Terrain requires a browser with module workers and decompression support. Geometric horizon shown.';$('sky-terrain-retry').hidden=false;publishTerrain();}
   }
   $('sky-terrain').addEventListener('change',()=>{terrainMaskKey='';if(!terrainEnabled()){terrainWorker?.terminate();terrainWorker=null;terrainKey='';$('sky-terrain-status').textContent='Terrain off · geometric horizon';}else startTerrain();publishTerrain();updateData();requestDraw();});

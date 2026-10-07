@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const assets={'/index.html':'<main>Planner</main>','/terrain/coverage.json':readFileSync(new URL('../dist/terrain/coverage.json',import.meta.url),'utf8'),'/terrain-worker.mjs':'export {};'};
-const source='const ASSETS='+JSON.stringify(assets)+';\n'+readFileSync(new URL('../worker/gateway.mjs',import.meta.url),'utf8');
+const source='const ASSETS='+JSON.stringify(assets)+';\n'+readFileSync(new URL('../worker/horizon-cache.mjs',import.meta.url),'utf8')+'\n'+readFileSync(new URL('../worker/gateway.mjs',import.meta.url),'utf8');
 const {default:worker}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 test('gateway serves app and module MIME types and rejects arbitrary proxy paths',async()=>{
   const request=p=>new Request('https://example.test'+p);
