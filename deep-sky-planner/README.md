@@ -173,3 +173,30 @@ request generation check. Up to 24 successful previews are retained in memory.
 Time playback does not re-fetch fixed J2000 fields. Loading, retry and empty
 selection states suppress outdated images; the enlarged view uses the existing
 accessible image dialog. Camera preview remains visible below the sky on mobile.
+
+## GitHub copy
+
+This project is stored in `astrostuff/deep-sky-planner/`.
+Live Site: https://christoph-messier-planner.riwedieb.chatgpt.site/
+
+From the repository root:
+
+```sh
+cd deep-sky-planner
+npm test
+npm run build
+```
+
+The ready-to-use catalog is committed in `dist/`; building and running the planner
+does not require the full OpenNGC database. The 3.9 MB raw source CSV is downloaded
+separately to avoid the connector's large-upload failure. Restore the exact pinned
+upstream snapshot, with SHA-256 verification, before regenerating the shortlist:
+
+```sh
+python scripts/fetch-openngc.py
+python scripts/select-deep-sky.py
+```
+
+The 13 Sites development steps were replayed under this directory. Original
+Sites commit IDs are recorded in the imported commit messages. The historical
+street-address placeholder was removed from the public import.
