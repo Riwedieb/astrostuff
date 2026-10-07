@@ -589,7 +589,7 @@ counts();
   const locationInput=document.createElement('input');
   locationInput.type='search'; locationInput.placeholder='e.g. Zurich Oerlikon'; locationInput.autocomplete='street-address';
   const geocodeButton=document.createElement('button');
-  geocodeButton.type='button'; geocodeButton.className='action'; geocodeButton.textContent='Find coordinates';
+  geocodeButton.type='button'; geocodeButton.className='action'; geocodeButton.textContent='Find'; geocodeButton.setAttribute('aria-label','Find coordinates for this location');
   const geocodeStatus=document.createElement('span'); geocodeStatus.className='geocode-status'; geocodeStatus.setAttribute('aria-live','polite');
   const table=document.querySelector('table');
   if(!document.getElementById('empty')){const empty=document.createElement('span');empty.id='empty';empty.hidden=true;document.body.appendChild(empty);}
