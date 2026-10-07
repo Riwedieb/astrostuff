@@ -18,8 +18,8 @@ placeholder. The 3D implementation is a separate subsequent commit.
 - **3D Sky:** an interactive celestial sphere and an observer perspective, all 110
   selectable Messier objects, local horizon, Sun, equator, north celestial pole,
   camera rectangle, position angle, and noon-to-noon time playback.
-- The Earth inset shows the geometric solar terminator centred on the selected
-  observing location. It is a schematic globe with geographic graticules.
+- The camera preview replaces the former Earth inset and follows the selected
+  object and camera PA. Click it to enlarge the same full sensor field.
 
 Use the tabs to switch views or “View in 3D Sky” on a catalog row. Select an object
 to animate the view towards it; “Zoom to camera” shows the rectangular camera
@@ -158,3 +158,18 @@ profile fields. Responses are private/no-store. Cache failures fall back to the
 existing tile scanner and appear as concise status messages. Check terrain / Retry
 bypasses a stored profile and replaces it after a successful full calculation.
 Increment the cache version after changing terrain data or scanner geometry.
+
+
+## 3D camera preview
+
+`sky-preview.mjs` reuses catalog survey requests at PA 0. Rotated previews request
+an explicit TAN WCS from CDS, with sensor dimensions and north-through-east PA
+matching `cameraFrame`. Pan-STARRS may fall back to DSS2; the displayed source is
+labelled. Monochrome requests use DSS2 red, including rotated requests via CDS.
+The rectangular survey cutout is never CSS-rotated or enlarged to fill a target.
+
+Requests are debounced, cancelled on target/source/PA changes and protected by a
+request generation check. Up to 24 successful previews are retained in memory.
+Time playback does not re-fetch fixed J2000 fields. Loading, retry and empty
+selection states suppress outdated images; the enlarged view uses the existing
+accessible image dialog. Camera preview remains visible below the sky on mobile.

@@ -1,5 +1,6 @@
+import {initSkyPreview} from './sky-preview.mjs';
 import {initDeepPlanner} from './deep-planner.mjs';
-import {DEG,clamp,wrap,dot,scale,add,unit,cross,horizontalVector,direction,angles,cameraFrame,projection,earthNormal} from './sky-math.mjs';
+import {DEG,clamp,wrap,dot,scale,add,unit,cross,horizontalVector,direction,angles,cameraFrame,projection} from './sky-math.mjs';
 import {horizonAt} from './terrain-math.mjs';
 
 const planner=window.MessierPlanner;
@@ -46,11 +47,11 @@ function initSky(api){
         <div><h2 id="sky-object-id">M31</h2><div class="sky-object-name" id="sky-object-name"></div><div class="sky-object-type" id="sky-object-type"></div></div>
         <dl class="sky-stats"><div><dt>Altitude</dt><dd id="sky-alt"></dd></div><div><dt>Azimuth</dt><dd id="sky-az"></dd></div></dl>
         <p id="sky-visibility" class="sky-visibility" role="status"></p>
-        <div><p id="sky-size"></p><p id="sky-camera-info" class="note">Camera · 2.82° × 1.89°</p></div>
+        <div><p id="sky-size"></p></div>
         <button class="action" id="sky-catalog-object">Open in catalog</button>
         <label class="sky-check"><input id="sky-below" type="checkbox" checked>Show obscured objects</label>
         <details><summary>Terrain clearance</summary><p id="sky-terrain-clearance" class="note"></p></details>
-        <div class="sky-earth"><h3>Earth · day / night</h3><canvas id="sky-earth" width="176" height="176" role="img" aria-label="Earth day and night boundary, centred on the observer"></canvas></div>
+        <div class="sky-camera-preview"><div class="sky-preview-heading"><span>Camera view</span><span id="sky-preview-target"></span></div><button id="sky-preview" class="field" type="button" disabled aria-label="Enlarge camera view"><img id="sky-preview-image" width="940" height="628" alt="Selected target camera field" hidden><span id="sky-preview-status" class="status" role="status">Select an object</span><span class="orientation" id="sky-preview-orientation">N ↑ E ←</span><span class="locator" aria-hidden="true"></span><span class="scale"><i></i>30′</span></button><div class="sky-preview-meta"><span id="sky-camera-info">2.82° × 1.89° · PA 0°</span><span id="sky-preview-source"></span></div><button class="action" id="sky-preview-retry" hidden>Retry image</button></div>
       </aside>
     </div>
     <div class="sky-timeline">
@@ -60,7 +61,7 @@ function initSky(api){
       <div class="sky-time-ticks" id="sky-time-ticks" aria-hidden="true"></div>
     </div>
     <div class="sky-foot"><div class="sky-legend"><span class="galaxy">Galaxies</span><span class="nebula">Nebulae</span><span class="cluster">Clusters / other</span><span class="camera">Camera</span></div><span id="sky-count"></span></div>
-    <div class="sky-help"><details><summary>Controls &amp; accuracy</summary><p id="sky-instructions">Drag to rotate · pinch or scroll to zoom · click a target to centre. Keyboard: arrows and + / −. Dashed targets are obscured. Earth inset: observer at centre, amber line marks day / night.</p><p>The globe shows sky directions, not object distances. The turquoise disc is the geometric horizon; the green silhouette is the calculated terrain. The camera rectangle uses your 477 mm focal length and 23.5 × 15.7 mm sensor, projected onto the celestial sphere. PA is measured from J2000 celestial north towards east; PA 0 matches the catalog images. “Zoom to camera” preserves the camera’s true angular size.</p><p>Terrain: <a href="https://sonny.4lima.de/" target="_blank" rel="noopener">Sonny’s Digital Terrain Models</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>, via the <a href="https://static.routeconverter.com/sonny/" target="_blank" rel="noopener">RouteConverter mirror</a> (2024 files). This app derives a horizon sampled every 0.1°: 0.5″ where available, otherwise 1″, within 25 km; 3″ from 25–150 km. 0.5″ is about 10 × 15 m in Switzerland. Tiles may contain coarser source data outside LiDAR coverage. Earth curvature is included; atmospheric refraction, buildings and trees are not. Mountains beyond 150 km and narrow features between samples can be missed. Incomplete directions remain unknown. The first load can download tens of MB; terrain tiles are cached on this device when possible. Choose Standard for smaller downloads.</p><p>Positions use the catalog’s J2000 coordinates, precessed to the selected date, and the same sidereal-time and solar calculations as the altitude charts. Refraction, nutation and stellar proper motions are not included. Catalog altitude charts retain the geometric horizon. The small Earth is a schematic globe with the geometric solar terminator; sky brightness is illustrative. Azimuth runs clockwise from north: N 0°, E 90°, S 180°, W 270°.</p></details></div>`;
+    <div class="sky-help"><details><summary>Controls &amp; accuracy</summary><p id="sky-instructions">Drag to rotate · pinch or scroll to zoom · click a target to centre. Keyboard: arrows and + / −. Dashed targets are obscured. Click the camera preview to enlarge. Its field follows Camera PA; images use the selected catalog survey.</p><p>The globe shows sky directions, not object distances. The turquoise disc is the geometric horizon; the green silhouette is the calculated terrain. The camera rectangle uses your 477 mm focal length and 23.5 × 15.7 mm sensor, projected onto the celestial sphere. PA is measured from J2000 celestial north towards east; PA 0 matches the catalog images. “Zoom to camera” preserves the camera’s true angular size.</p><p>Terrain: <a href="https://sonny.4lima.de/" target="_blank" rel="noopener">Sonny’s Digital Terrain Models</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>, via the <a href="https://static.routeconverter.com/sonny/" target="_blank" rel="noopener">RouteConverter mirror</a> (2024 files). This app derives a horizon sampled every 0.1°: 0.5″ where available, otherwise 1″, within 25 km; 3″ from 25–150 km. 0.5″ is about 10 × 15 m in Switzerland. Tiles may contain coarser source data outside LiDAR coverage. Earth curvature is included; atmospheric refraction, buildings and trees are not. Mountains beyond 150 km and narrow features between samples can be missed. Incomplete directions remain unknown. The first load can download tens of MB; terrain tiles are cached on this device when possible. Choose Standard for smaller downloads.</p><p>Positions use the catalog’s J2000 coordinates, precessed to the selected date, and the same sidereal-time and solar calculations as the altitude charts. Refraction, nutation and stellar proper motions are not included. Catalog altitude charts retain the geometric horizon. Sky brightness is illustrative. Azimuth runs clockwise from north: N 0°, E 90°, S 180°, W 270°.</p></details></div>`;
   catalogPanel.after(panel);
   api.catalog.forEach(d=>{
     const option=document.createElement('option');option.value=d.id;option.textContent=`${d.designation}${d.name?' · '+d.name:''}`;$('sky-target').append(option);
@@ -68,10 +69,11 @@ function initSky(api){
     button.addEventListener('click',()=>{setTab(true);select(d.id);panel.scrollIntoView({block:'start',behavior:reducedMotion.matches?'instant':'smooth'});});
     $(`m${d.id}`).querySelector('.object').append(button);
   });
-  const canvas=$('sky-canvas'),ctx=canvas.getContext('2d'),earthCanvas=$('sky-earth'),earthCtx=earthCanvas.getContext('2d');
+  const preview=initSkyPreview(api);
+  const canvas=$('sky-canvas'),ctx=canvas.getContext('2d');
   if(!ctx){panel.innerHTML='<p class="notice">This browser cannot draw the 3D sky. Please open the planner in a browser with canvas support. The catalog remains available.</p>';tabbar.querySelectorAll('button').forEach((b,i)=>b.addEventListener('click',()=>{panel.hidden=!i;catalogPanel.hidden=!!i;}));return;}
   let context=api.getContext(),ms=context.midnight,selected=31,mode='globe',az=25,alt=25,zoom=1,fov=65,pa=0;
-  let active=false,playing=false,frameId=0,lastTime=0,tween=null,trackTarget=false,dirty=true,earthDirty=true;
+  let active=false,playing=false,frameId=0,lastTime=0,tween=null,trackTarget=false,dirty=true;
   let w=900,h=600,objects=[],sun=[],hitTargets=[],cameraPoints=[],equator=[],northPole=[];
   let filteredIds=new Set(api.catalog.map(d=>d.id));
   let terrain=null,terrainWorker=null,terrainKey='',terrainMaskKey='',terrainPoints=[];
@@ -123,6 +125,7 @@ function initSky(api){
     for(const [id,isSelected]of [['catalog-tab',!sky],['sky-tab',sky]]){$(id).setAttribute('aria-selected',String(isSelected));$(id).tabIndex=isSelected?0:-1;}
     if(!sky){playing=false;tween=null;$('sky-play').textContent='▶ Play';$('sky-play').setAttribute('aria-pressed','false');cancelAnimationFrame(frameId);frameId=0;}
     else{resize();startTerrain();requestDraw();}
+    preview.update(lookup.get(selected),pa,active&&filteredIds.size>0);
   }
   $('catalog-tab').addEventListener('click',()=>setTab(false));$('sky-tab').addEventListener('click',()=>setTab(true));
   tabbar.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();setTab(e.key==='End'||(e.key!=='Home'&&!active));$(active?'sky-tab':'catalog-tab').focus();}});
@@ -188,7 +191,7 @@ function initSky(api){
     const edgeClearances=cameraPoints.map(p=>{const limit=terrainLimit(p);return limit===null?null:angles(p).alt-limit;});
     $('sky-terrain-clearance').textContent=clearance===null?'':`Terrain at target: ${terrainAltitude.toFixed(2)}°. ${edgeClearances.some(c=>c===null)?'Camera edge: terrain coverage incomplete.':`Lowest camera-edge clearance: ${Math.min(...edgeClearances).toFixed(2)}°.`}`;
     $('sky-size').textContent=`${d.size_display} · ${d.mag_band||'Optical'} mag ${(d.mag==null?'unknown':d.mag.toFixed(1))}`;
-    $('sky-camera-info').textContent=`Camera · 2.82° × 1.89° · PA ${pa}°`;
+    preview.update(d,pa,active&&filteredIds.size>0);
     const p=api.localParts(ms);const offset=new Intl.DateTimeFormat('en',{timeZone:context.timeZone,timeZoneName:'shortOffset'}).formatToParts(ms).find(p=>p.type==='timeZoneName')?.value;
     $('sky-time-label').textContent=`${p.day}.${p.month}.${p.year} · ${p.hour}:${p.minute} · ${context.timeZone} (${offset})`;
     $('sky-time').value=String((ms-context.start)/60000);$('sky-time').setAttribute('aria-valuetext',$('sky-time-label').textContent);
@@ -196,7 +199,7 @@ function initSky(api){
     const shown=objects.filter(o=>filteredIds.has(o.d.id)),known=shown.filter(o=>terrainLimit(o.v)!==null);
     $('sky-count').textContent=terrainEnabled()&&terrain?`${known.filter(o=>!obscured(o.v)).length} above terrain · ${shown.length-known.length} unknown`:`${shown.filter(o=>o.v[1]>=0).length} / ${shown.length} above geometric horizon`;
     if(trackTarget&&!tween){az=a.az;alt=clamp(a.alt,-89.5,89.5);}
-    dirty=true;earthDirty=true;
+    dirty=true;
   }
   function rebuildTime(){
     const duration=context.end-context.start;$('sky-time').max=String(duration/60000);
@@ -302,28 +305,6 @@ function initSky(api){
     const sp=proj(sun);if(sp&&sp.x>0&&sp.x<w&&sp.y>55&&sp.y<h){ctx.globalAlpha=mode==='globe'&&sp.z<0?.4:1;ctx.beginPath();ctx.arc(sp.x,sp.y,6,0,2*Math.PI);ctx.fillStyle='#ffd48a';ctx.shadowColor='#ffc06a';ctx.shadowBlur=16;ctx.fill();ctx.shadowBlur=0;ctx.globalAlpha=1;label('Sun',sun,'#ffcf8c',11);}
     if(mode==='globe'){const origin=proj([0,0,0]);ctx.fillStyle='#b1e8e4';ctx.beginPath();ctx.arc(origin.x,origin.y,3,0,Math.PI*2);ctx.fill();}
     $('sky-view-name').textContent=mode==='globe'?'Sky globe':'Observer view';$('sky-view-direction').textContent=mode==='globe'?'Horizon disc · all sky directions':`Az ${wrap(az).toFixed(0)}° · Alt ${alt.toFixed(0)}° · vertical field ${fov.toFixed(1)}°`;
-    if(earthDirty){drawEarth();earthDirty=false;}
-  }
-  function drawEarth(){
-    if(!earthCtx)return;const size=176,r=76,c=size/2;earthCtx.clearRect(0,0,size,size);
-    const img=earthCtx.createImageData(size,size);
-    for(let y=0;y<size;y++)for(let x=0;x<size;x++){
-      const e=(x-c)/r,n=(c-y)/r,q=e*e+n*n;if(q>1)continue;
-      const u=Math.sqrt(1-q),s=dot([e,u,n],sun),lit=s>0;
-      const bright=lit?.55+.45*Math.sqrt(s):.55;
-      const base=lit?[64,113,135]:[18,31,53],i=(y*size+x)*4;
-      for(let k=0;k<3;k++)img.data[i+k]=base[k]*bright;
-      img.data[i+3]=255;
-    }
-    earthCtx.putImageData(img,0,0);
-    function earthLine(vectors,color,width=1){earthCtx.beginPath();let open=false;for(const v of vectors){if(v[1]<0){open=false;continue;}const x=c+v[0]*r,y=c-v[2]*r;if(!open)earthCtx.moveTo(x,y);else earthCtx.lineTo(x,y);open=true;}earthCtx.strokeStyle=color;earthCtx.lineWidth=width;earthCtx.stroke();}
-    for(const lat of [-60,-30,0,30,60])earthLine(Array.from({length:181},(_,i)=>earthNormal(lat,i*2,context.latitude,context.longitude)),'#9db9c333');
-    for(let lon=0;lon<360;lon+=30)earthLine(Array.from({length:91},(_,i)=>earthNormal(i*2-90,lon,context.latitude,context.longitude)),'#9db9c333');
-    const tangent=unit(cross(sun,Math.abs(sun[1])<.9?[0,1,0]:[1,0,0])),other=cross(sun,tangent);
-    earthLine(Array.from({length:181},(_,i)=>add(scale(tangent,Math.cos(i*2*DEG)),scale(other,Math.sin(i*2*DEG)))),'#f3bc83',1.7);
-    earthCtx.beginPath();earthCtx.arc(c,c,r,0,Math.PI*2);earthCtx.strokeStyle='#63899b';earthCtx.lineWidth=1;earthCtx.stroke();
-    earthCtx.fillStyle='#d8ffff';earthCtx.beginPath();earthCtx.arc(c,c,3,0,Math.PI*2);earthCtx.fill();
-    const solarAlt=angles(sun).alt;earthCanvas.setAttribute('aria-label',`Earth day and night boundary. Observer at centre, Sun altitude ${solarAlt.toFixed(1)} degrees, ${solarAlt>=0?'day side':'night side'}.`);
   }
   const emptySelection=document.createElement('p');emptySelection.id='sky-selection-empty';emptySelection.hidden=true;emptySelection.textContent='No targets match the filters.';document.querySelector('.sky-side').prepend(emptySelection);
   window.addEventListener('deep:selection',()=>{

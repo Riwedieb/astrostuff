@@ -773,7 +773,7 @@ counts();
     window.dispatchEvent(new CustomEvent('messier:context'));
   }
   window.MessierPlanner=Object.freeze({
-    catalog:CATALOG, fieldWidth:FOV, fieldHeight:1.88566571, precess, gmst, sunRaDec,
+    catalog:CATALOG, imageCandidates, requestSurveyImage, fieldWidth:FOV, fieldHeight:1.88566571, precess, gmst, sunRaDec,
     getContext(){const start=zonedNoon(dateInput.value).getTime(); return {latitude:LAT,longitude:LON,timeZone:TZ,date:dateInput.value,start,end:zonedNoon(isoDate(new Date(start+DAY))).getTime(),midnight:zonedHour(dateInput.value,24).getTime()};},
     localParts, localTime, filter, sortRows, visibleIds:()=>rows.filter(r=>!r.hidden).map(r=>+r.dataset.id),
     setNightDate(value){dateInput.value=value;render();},

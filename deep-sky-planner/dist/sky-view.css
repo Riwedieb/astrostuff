@@ -26,8 +26,6 @@ body.sky-active .astro-controls p{display:none}body.sky-active .astro-controls{m
 .sky-stats dt{font-size:14px;color:var(--muted)}.sky-stats dd{font-size:20px;margin:0;font-variant-numeric:tabular-nums}
 .sky-visibility{font-size:14px;color:#99d5d6}.sky-visibility.below{color:#d4b0a2}
 .sky-side .action{width:100%}.sky-side .sky-check{flex-direction:row;align-items:center;gap:10px;color:#dae6ef}.sky-check input{width:18px;height:18px;accent-color:#80cacc}
-.sky-earth{padding-top:14px;border-top:1px solid var(--line);margin-top:auto}.sky-earth h3{font-size:14px;font-weight:500;margin:0 0 8px;color:#d3e3ef}
-#sky-earth{display:block;width:152px;height:152px;margin:0 auto 8px}.sky-earth p{font-size:13px;color:var(--muted);line-height:1.4}
 .sky-timeline{padding:14px 18px;border-top:1px solid var(--line);background:#14202c}
 .sky-time-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}.sky-time-row output{font-size:16px;color:#f1f7fb;font-variant-numeric:tabular-nums;margin-right:auto}.sky-time-row select{padding:8px;font-size:14px}.sky-time-row label{display:flex;flex-direction:row;align-items:center}
 .sky-time-row .action{padding:8px 12px;min-height:40px}#sky-time{width:100%;height:24px;margin:0;padding:0;background:transparent;accent-color:#95ddda;cursor:pointer;border:0}
@@ -37,6 +35,13 @@ body.sky-active .astro-controls p{display:none}body.sky-active .astro-controls{m
 .sky-help{padding:12px 18px;font-size:14px;color:var(--muted);background:#101a25}.sky-help p{max-width:none;margin:0}.sky-help details{margin-top:8px}.sky-help details p{margin-top:8px}
 .sky-row-button{margin-top:8px;padding:5px 9px;font-size:13px!important;width:max-content}
 @media(max-width:980px){.sky-workspace{grid-template-columns:minmax(0,1fr) 220px}.sky-side{padding:15px}.sky-toolbar{gap:8px}}
-@media(max-width:700px){.view-switch{width:100%}.view-switch button{flex:1;min-width:0}.sky-workspace{grid-template-columns:minmax(0,1fr)}.sky-side{border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:14px}.sky-side>div:first-child{grid-column:1/-1}.sky-earth{display:none}.sky-toolbar .sky-target{flex-basis:100%}.sky-toolbar .action{flex:1}.sky-toolbar label:not(.sky-target){flex:1}.sky-toolbar input{width:100%}#sky-canvas{height:440px}.sky-stage-head{font-size:13px;top:12px;left:12px;right:12px}.sky-time-row output{flex-basis:100%}.sky-time-row label{width:auto}.sky-time-row select{width:auto}.sky-foot{gap:8px}.sky-help{font-size:14px}body.sky-active h1{font-size:25px}.sky-side h2{font-size:26px}}
+@media(max-width:700px){.view-switch{width:100%}.view-switch button{flex:1;min-width:0}.sky-workspace{grid-template-columns:minmax(0,1fr)}.sky-side{border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:14px}.sky-side>div:first-child{grid-column:1/-1}.sky-toolbar .sky-target{flex-basis:100%}.sky-toolbar .action{flex:1}.sky-toolbar label:not(.sky-target){flex:1}.sky-toolbar input{width:100%}#sky-canvas{height:440px}.sky-stage-head{font-size:13px;top:12px;left:12px;right:12px}.sky-time-row output{flex-basis:100%}.sky-time-row label{width:auto}.sky-time-row select{width:auto}.sky-foot{gap:8px}.sky-help{font-size:14px}body.sky-active h1{font-size:25px}.sky-side h2{font-size:26px}}
 @media print{.view-switch,.sky-panel,.sky-row-button{display:none!important}}
-@media(max-width:700px){.sky-earth{display:grid;grid-column:1/-1;grid-template-columns:1fr 152px;column-gap:16px;align-items:center}.sky-earth h3{grid-column:1;align-self:end}.sky-earth p{grid-column:1;grid-row:2;align-self:start}#sky-earth{grid-column:2;grid-row:1/3;margin:0}}
+
+.sky-camera-preview{padding-top:14px;border-top:1px solid var(--line);margin-top:auto;min-width:0}
+.sky-preview-heading{display:flex;justify-content:space-between;gap:8px;font-size:14px;margin-bottom:8px}
+.sky-camera-preview .field{border-radius:4px}.sky-camera-preview .field:disabled{cursor:default}
+.sky-camera-preview .orientation:empty{display:none}
+.sky-preview-meta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 10px;font-size:12px;color:var(--muted);margin-top:6px}
+.sky-camera-preview .status{font-size:14px;padding:10px}.sky-camera-preview .action{margin-top:8px}
+@media(max-width:700px){.sky-side>.sky-camera-preview{grid-column:1/-1;width:100%;max-width:470px;justify-self:center}.sky-preview-meta{font-size:14px}}
