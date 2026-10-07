@@ -122,9 +122,15 @@ drives 3D markers and Go to object; extra labels appear only when zoomed in.
 A candidate sample requires Sun <= -18° and target altitude >= configured
 minimum (default 30°). Verified samples additionally require known Sonny
 terrain strictly below the target centre. Adjacent qualifying samples define
-intervals; disconnected intervals never combine to meet the default two-hour
-continuous criterion. Terrain gaps and missing profiles cannot pass the strict
-filter. Users may explicitly turn off the terrain requirement (labelled
+intervals for the regular dark-night chart. The tonight filter separately anchors
+visibility to the evening Sun = -12° crossing (start of astronomical twilight),
+located to within one millisecond and inserted into the grid. The target must
+already meet the altitude and optional terrain criteria then and keep meeting
+them, while Sun <= -12°, for the default two hours. Later starts and recovery
+after a gap do not qualify; a date without an evening crossing cannot qualify.
+The row states the dusk time and uninterrupted duration separately from its
+dark-night window. Duration ends are conservative to one sample step. Terrain
+gaps and missing profiles cannot pass the strict filter. Users may explicitly turn off the terrain requirement (labelled
 geometry only). Weather, lunar brightness, buildings, trees, fine obstructions
 between samples, and camera-edge visibility are outside this filter.
 
