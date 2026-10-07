@@ -31,10 +31,10 @@ function initSky(api){
     </div>
     <div class="sky-terrain-controls">
       <label class="sky-check"><input id="sky-terrain" type="checkbox" checked>Sonny terrain</label>
-      <label>Near terrain<select id="sky-terrain-detail"><option value="fine">Fine · 0.5″ where available</option><option value="standard">Standard · 1″</option></select></label>
-      <label>Height above ground (m)<input id="sky-eye-height" type="number" value="2" min="0" max="10000" step="0.5"></label>
+      <label>Detail<select id="sky-terrain-detail"><option value="fine">Fine · up to 0.5″</option><option value="standard">Standard · 1″</option></select></label>
+      <label>Observer height (m)<input id="sky-eye-height" type="number" value="2" min="0" max="10000" step="0.5"></label>
       <button class="action" id="sky-terrain-retry" hidden>Retry terrain</button>
-      <p id="sky-terrain-status" role="status">Terrain loads when you open 3D Sky.</p>
+      <p id="sky-terrain-status" role="status">Terrain not loaded</p>
     </div>
     <div class="sky-workspace">
       <div class="sky-stage">
@@ -49,22 +49,22 @@ function initSky(api){
         <div><p id="sky-size"></p><p id="sky-camera-info" class="note">Camera · 2.82° × 1.89°</p></div>
         <button class="action" id="sky-catalog-object">Open in catalog</button>
         <label class="sky-check"><input id="sky-below" type="checkbox" checked>Show obscured objects</label>
-        <p id="sky-terrain-clearance" class="note"></p>
-        <div class="sky-earth"><h3>Earth · day / night</h3><canvas id="sky-earth" width="176" height="176" role="img" aria-label="Earth day and night boundary, centred on the observer"></canvas><p>Your location is at the centre. The amber line is the day–night boundary.</p></div>
+        <details><summary>Terrain clearance</summary><p id="sky-terrain-clearance" class="note"></p></details>
+        <div class="sky-earth"><h3>Earth · day / night</h3><canvas id="sky-earth" width="176" height="176" role="img" aria-label="Earth day and night boundary, centred on the observer"></canvas></div>
       </aside>
     </div>
     <div class="sky-timeline">
       <div class="sky-time-row"><output id="sky-time-label" for="sky-time"></output><button class="action" id="sky-now">Now</button><button class="action" id="sky-play" aria-pressed="false">▶ Play</button><label>Speed<select id="sky-speed"><option value="10">10 min / s</option><option value="30" selected>30 min / s</option><option value="60">1 hour / s</option></select></label></div>
       <div id="sky-night-track" class="sky-night-track" aria-hidden="true"></div>
-      <label for="sky-time" class="sky-time-label">Time · selected noon-to-noon interval</label><input id="sky-time" type="range" min="0" max="1440" step="1" value="720">
+      <label for="sky-time" class="sky-time-label">Time</label><input id="sky-time" type="range" min="0" max="1440" step="1" value="720">
       <div class="sky-time-ticks" id="sky-time-ticks" aria-hidden="true"></div>
     </div>
     <div class="sky-foot"><div class="sky-legend"><span class="galaxy">Galaxies</span><span class="nebula">Nebulae</span><span class="cluster">Clusters / other</span><span class="camera">Camera</span></div><span id="sky-count"></span></div>
-    <div class="sky-help"><p id="sky-instructions">Drag to rotate · scroll or pinch to zoom · click an object to centre it. Keyboard: arrows to rotate, + / − to zoom. Dashed marks are obscured. Terrain changes automatically with the observing location.</p><details><summary>Geometry and accuracy</summary><p>The globe shows sky directions, not object distances. The turquoise disc is the geometric horizon; the green silhouette is the calculated terrain. The camera rectangle uses your 477 mm focal length and 23.5 × 15.7 mm sensor, projected onto the celestial sphere. PA is measured from J2000 celestial north towards east; PA 0 matches the catalog images. “Zoom to camera” preserves the camera’s true angular size.</p><p>Terrain: <a href="https://sonny.4lima.de/" target="_blank" rel="noopener">Sonny’s Digital Terrain Models</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>, via the <a href="https://static.routeconverter.com/sonny/" target="_blank" rel="noopener">RouteConverter mirror</a> (2024 files). This app derives a horizon sampled every 0.1°: 0.5″ where available, otherwise 1″, within 25 km; 3″ from 25–150 km. 0.5″ is about 10 × 15 m in Switzerland. Tiles may contain coarser source data outside LiDAR coverage. Earth curvature is included; atmospheric refraction, buildings and trees are not. Mountains beyond 150 km and narrow features between samples can be missed. Incomplete directions remain unknown. The first load can download tens of MB; terrain tiles are cached on this device when possible. Choose Standard for smaller downloads.</p><p>Positions use the catalog’s J2000 coordinates, precessed to the selected date, and the same sidereal-time and solar calculations as the altitude charts. Refraction, nutation and stellar proper motions are not included. Catalog altitude charts retain the geometric horizon. The small Earth is a schematic globe with the geometric solar terminator; sky brightness is illustrative. Azimuth runs clockwise from north: N 0°, E 90°, S 180°, W 270°.</p></details></div>`;
+    <div class="sky-help"><details><summary>Controls &amp; accuracy</summary><p id="sky-instructions">Drag to rotate · pinch or scroll to zoom · click a target to centre. Keyboard: arrows and + / −. Dashed targets are obscured. Earth inset: observer at centre, amber line marks day / night.</p><p>The globe shows sky directions, not object distances. The turquoise disc is the geometric horizon; the green silhouette is the calculated terrain. The camera rectangle uses your 477 mm focal length and 23.5 × 15.7 mm sensor, projected onto the celestial sphere. PA is measured from J2000 celestial north towards east; PA 0 matches the catalog images. “Zoom to camera” preserves the camera’s true angular size.</p><p>Terrain: <a href="https://sonny.4lima.de/" target="_blank" rel="noopener">Sonny’s Digital Terrain Models</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>, via the <a href="https://static.routeconverter.com/sonny/" target="_blank" rel="noopener">RouteConverter mirror</a> (2024 files). This app derives a horizon sampled every 0.1°: 0.5″ where available, otherwise 1″, within 25 km; 3″ from 25–150 km. 0.5″ is about 10 × 15 m in Switzerland. Tiles may contain coarser source data outside LiDAR coverage. Earth curvature is included; atmospheric refraction, buildings and trees are not. Mountains beyond 150 km and narrow features between samples can be missed. Incomplete directions remain unknown. The first load can download tens of MB; terrain tiles are cached on this device when possible. Choose Standard for smaller downloads.</p><p>Positions use the catalog’s J2000 coordinates, precessed to the selected date, and the same sidereal-time and solar calculations as the altitude charts. Refraction, nutation and stellar proper motions are not included. Catalog altitude charts retain the geometric horizon. The small Earth is a schematic globe with the geometric solar terminator; sky brightness is illustrative. Azimuth runs clockwise from north: N 0°, E 90°, S 180°, W 270°.</p></details></div>`;
   catalogPanel.after(panel);
   api.catalog.forEach(d=>{
     const option=document.createElement('option');option.value=d.id;option.textContent=`${d.designation}${d.name?' · '+d.name:''}`;$('sky-target').append(option);
-    const button=document.createElement('button');button.className='action sky-row-button';button.type='button';button.textContent='View in 3D Sky';button.setAttribute('aria-label',`View ${d.designation} in 3D Sky`);
+    const button=document.createElement('button');button.className='action sky-row-button';button.type='button';button.textContent='3D Sky';button.setAttribute('aria-label',`View ${d.designation} in 3D Sky`);
     button.addEventListener('click',()=>{setTab(true);select(d.id);panel.scrollIntoView({block:'start',behavior:reducedMotion.matches?'instant':'smooth'});});
     $(`m${d.id}`).querySelector('.object').append(button);
   });
@@ -90,11 +90,11 @@ function initSky(api){
       terrain=profile;terrainPoints=Array.from({length:3601},(_,i)=>profile.valid[i%3600]?direction(i/10,profile.altitudes[i%3600]):null);
       terrainCache.set(key,profile);if(terrainCache.size>12)terrainCache.delete(terrainCache.keys().next().value);
       const complete=profile.valid.filter(Boolean).length===3600;
-      $('sky-terrain-status').textContent=`Sonny · ground ${profile.ground.toFixed(0)} m · eye +${profile.eyeHeight} m · ${profile.resolution}″ nearby / 3″ far · 150 km${complete?'':' · incomplete coverage; gaps are unknown'}`;
+      $('sky-terrain-status').textContent=complete?'Terrain ready':'Terrain incomplete · gaps unknown';
       $('sky-terrain-retry').hidden=complete;publishTerrain();updateData();requestDraw();
     }
     if(!force&&terrainCache.has(key)){accept(terrainCache.get(key));return;}
-    $('sky-terrain-status').textContent='Loading Sonny terrain… geometric horizon shown while loading.';publishTerrain();updateData();requestDraw();
+    $('sky-terrain-status').textContent='Loading terrain…';publishTerrain();updateData();requestDraw();
     try{
       terrainWorker=new Worker(new URL('./terrain-worker.mjs',import.meta.url),{type:'module'});
       const worker=terrainWorker;
@@ -325,7 +325,7 @@ function initSky(api){
     earthCtx.fillStyle='#d8ffff';earthCtx.beginPath();earthCtx.arc(c,c,3,0,Math.PI*2);earthCtx.fill();
     const solarAlt=angles(sun).alt;earthCanvas.setAttribute('aria-label',`Earth day and night boundary. Observer at centre, Sun altitude ${solarAlt.toFixed(1)} degrees, ${solarAlt>=0?'day side':'night side'}.`);
   }
-  const emptySelection=document.createElement('p');emptySelection.id='sky-selection-empty';emptySelection.hidden=true;emptySelection.textContent='No targets match the shared filters. Adjust the selection above.';document.querySelector('.sky-side').prepend(emptySelection);
+  const emptySelection=document.createElement('p');emptySelection.id='sky-selection-empty';emptySelection.hidden=true;emptySelection.textContent='No targets match the filters.';document.querySelector('.sky-side').prepend(emptySelection);
   window.addEventListener('deep:selection',()=>{
     filteredIds=new Set(api.visibleIds());const matches=api.catalog.filter(d=>filteredIds.has(d.id));
     $('sky-target').replaceChildren(...matches.map(d=>{const option=document.createElement('option');option.value=d.id;option.textContent=d.designation+(d.name?' · '+d.name:'');return option;}));
