@@ -1,6 +1,6 @@
-# Christoph’s Messier Planner
+# Christoph’s Deep-Sky Planner
 
-Observation and framing planner for all 110 Messier objects. The source is
+Observation and framing planner for all 110 Messier objects and 180 additional NGC/IC targets. The source is
 authored in `dist/`. A small Cloudflare Worker serves these assets and streams
 Sonny terrain tiles from an allowlisted mirror (the mirror does not provide
 browser CORS). There are no external JavaScript dependencies.
@@ -96,3 +96,41 @@ Run `npm test` for sky and terrain checks.
 Real-data verification: all 16 tiles for Zurich Oerlikon decoded and passed ZIP
 CRC checks; all 3600 directions complete. Ground elevation 442 m, horizon range
 0.286664°–4.754890°. Calculation took about 9 s locally after download.
+
+## Extended photo selection and night planning
+
+The catalog has 290 distinct records: all 110 Messier objects and 180 northern
+NGC/IC additions. The derived OpenNGC data is CC BY-SA 4.0 (attribution and
+download linked in the Site). The raw source snapshot is tracked at
+`data/OpenNGC.csv`; `python scripts/select-deep-sky.py` regenerates the shortlist.
+The payload records the source SHA-256. Northern NGC/IC Caldwell entries seed
+the list, including explicitly marked compact/challenging exceptions. Other
+objects follow size, published optical brightness and galaxy surface-brightness
+criteria, with quotas balancing galaxies, clusters and nebulae. This is a fixed
+Zürich-accessible shortlist (culmination >=30° at 47.411° N), independent of
+the selected night. It is not a complete Caldwell catalog or a detectability
+guarantee. Source nulls remain unknown and B and V magnitudes are labelled.
+
+`catalog-setup.js` adds records before the original catalog/images initialize,
+using stable numeric IDs distinct from Messier. Object names and aliases are
+searchable, while duplicate Messier identities and OpenNGC duplicate records
+are excluded. `deep-planner.mjs` adds collection/type selection, shared filters,
+photo-window cells, chart shading, and mobile details/cards. The same selection
+drives 3D markers and Go to object; extra labels appear only when zoomed in.
+
+`night-math.mjs` samples the actual local noon-to-noon interval every 5 minutes.
+A candidate sample requires Sun <= -18° and target altitude >= configured
+minimum (default 30°). Verified samples additionally require known Sonny
+terrain strictly below the target centre. Adjacent qualifying samples define
+intervals; disconnected intervals never combine to meet the default two-hour
+continuous criterion. Terrain gaps and missing profiles cannot pass the strict
+filter. Users may explicitly turn off the terrain requirement (labelled
+geometry only). Weather, lunar brightness, buildings, trees, fine obstructions
+between samples, and camera-edge visibility are outside this filter.
+
+Terrain loads from either view on request; its profile, loading/error state,
+observer height and location invalidation are shared with the night planner.
+Changes to date and criteria recalculate intervals without redownloading the
+terrain. Green chart bands indicate verified intervals, amber bands geometric
+candidates. Sort by longest window, earliest best-window midpoint, name, or
+the original magnitude/size/altitude options.

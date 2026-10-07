@@ -22,7 +22,7 @@ export default {
     }
     const key=path==='/'?'/index.html':path,body=ASSETS[key];
     if(body===undefined)return new Response('Not found',{status:404});
-    const ext=key.split('.').pop(),type={html:'text/html',css:'text/css',mjs:'text/javascript',json:'application/json',txt:'text/plain'}[ext]||'application/octet-stream';
+    const ext=key.split('.').pop(),type={html:'text/html',css:'text/css',js:'text/javascript',mjs:'text/javascript',json:'application/json',txt:'text/plain'}[ext]||'application/octet-stream';
     return new Response(request.method==='HEAD'?null:body,{headers:{'Content-Type':type+'; charset=utf-8','Cache-Control':'no-cache','X-Content-Type-Options':'nosniff'}});
   }
 };

@@ -1,3 +1,4 @@
+import {initDeepPlanner} from './deep-planner.mjs';
 import {DEG,clamp,wrap,dot,scale,add,unit,cross,horizontalVector,direction,angles,cameraFrame,projection,earthNormal} from './sky-math.mjs';
 import {horizonAt} from './terrain-math.mjs';
 
@@ -37,7 +38,7 @@ function initSky(api){
     </div>
     <div class="sky-workspace">
       <div class="sky-stage">
-        <canvas id="sky-canvas" tabindex="0" aria-label="Interactive 3D sky. Drag or use arrow keys to rotate; scroll or use plus and minus to zoom. Select a Messier object using Go to object." aria-describedby="sky-instructions">Use the object selector for altitude and azimuth of all 110 Messier objects.</canvas>
+        <canvas id="sky-canvas" tabindex="0" aria-label="Interactive 3D sky. Drag or use arrow keys to rotate; scroll or use plus and minus to zoom. Select a deep-sky object using Go to object." aria-describedby="sky-instructions">Use the object selector for altitude and azimuth of all selected deep-sky objects.</canvas>
         <div class="sky-stage-head"><span><b id="sky-view-name">Sky globe</b><br><span id="sky-view-direction"></span></span><span id="sky-day-state"></span></div>
         <div class="sky-canvas-tools"><button class="action" id="sky-zoom-in" aria-label="Zoom in">+</button><button class="action" id="sky-zoom-out" aria-label="Zoom out">−</button><button class="action" id="sky-reset">Reset view</button></div>
       </div>
@@ -62,8 +63,8 @@ function initSky(api){
     <div class="sky-help"><p id="sky-instructions">Drag to rotate · scroll or pinch to zoom · click an object to centre it. Keyboard: arrows to rotate, + / − to zoom. Dashed marks are obscured. Terrain changes automatically with the observing location.</p><details><summary>Geometry and accuracy</summary><p>The globe shows sky directions, not object distances. The turquoise disc is the geometric horizon; the green silhouette is the calculated terrain. The camera rectangle uses your 477 mm focal length and 23.5 × 15.7 mm sensor, projected onto the celestial sphere. PA is measured from J2000 celestial north towards east; PA 0 matches the catalog images. “Zoom to camera” preserves the camera’s true angular size.</p><p>Terrain: <a href="https://sonny.4lima.de/" target="_blank" rel="noopener">Sonny’s Digital Terrain Models</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>, via the <a href="https://static.routeconverter.com/sonny/" target="_blank" rel="noopener">RouteConverter mirror</a> (2024 files). This app derives a horizon sampled every 0.1°: 0.5″ where available, otherwise 1″, within 25 km; 3″ from 25–150 km. 0.5″ is about 10 × 15 m in Switzerland. Tiles may contain coarser source data outside LiDAR coverage. Earth curvature is included; atmospheric refraction, buildings and trees are not. Mountains beyond 150 km and narrow features between samples can be missed. Incomplete directions remain unknown. The first load can download tens of MB; terrain tiles are cached on this device when possible. Choose Standard for smaller downloads.</p><p>Positions use the catalog’s J2000 coordinates, precessed to the selected date, and the same sidereal-time and solar calculations as the altitude charts. Refraction, nutation and stellar proper motions are not included. Catalog altitude charts retain the geometric horizon. The small Earth is a schematic globe with the geometric solar terminator; sky brightness is illustrative. Azimuth runs clockwise from north: N 0°, E 90°, S 180°, W 270°.</p></details></div>`;
   catalogPanel.after(panel);
   api.catalog.forEach(d=>{
-    const option=document.createElement('option');option.value=d.id;option.textContent=`M${d.id}${d.name?' · '+d.name:''}`;$('sky-target').append(option);
-    const button=document.createElement('button');button.className='action sky-row-button';button.type='button';button.textContent='View in 3D Sky';button.setAttribute('aria-label',`View M${d.id} in 3D Sky`);
+    const option=document.createElement('option');option.value=d.id;option.textContent=`${d.designation}${d.name?' · '+d.name:''}`;$('sky-target').append(option);
+    const button=document.createElement('button');button.className='action sky-row-button';button.type='button';button.textContent='View in 3D Sky';button.setAttribute('aria-label',`View ${d.designation} in 3D Sky`);
     button.addEventListener('click',()=>{setTab(true);select(d.id);panel.scrollIntoView({block:'start',behavior:reducedMotion.matches?'instant':'smooth'});});
     $(`m${d.id}`).querySelector('.object').append(button);
   });
@@ -72,13 +73,15 @@ function initSky(api){
   let context=api.getContext(),ms=context.midnight,selected=31,mode='globe',az=25,alt=25,zoom=1,fov=65,pa=0;
   let active=false,playing=false,frameId=0,lastTime=0,tween=null,trackTarget=false,dirty=true,earthDirty=true;
   let w=900,h=600,objects=[],sun=[],hitTargets=[],cameraPoints=[],equator=[],northPole=[];
+  let filteredIds=new Set(api.catalog.map(d=>d.id));
   let terrain=null,terrainWorker=null,terrainKey='',terrainMaskKey='',terrainPoints=[];
   const terrainCache=new Map(),terrainMask=document.createElement('canvas');
   const terrainEnabled=()=>$('sky-terrain').checked;
+  const publishTerrain=()=>window.dispatchEvent(new CustomEvent('deep:terrain',{detail:{profile:terrainEnabled()?terrain:null,text:$('sky-terrain-status').textContent}}));
   const terrainLimit=v=>{const a=angles(v);return terrainEnabled()&&terrain?horizonAt(terrain,a.az):null;};
   const obscured=v=>{const limit=terrainLimit(v);return angles(v).alt<(limit??0);};
   function startTerrain(force=false){
-    if(!active||!terrainEnabled())return;
+    if(!terrainEnabled())return;
     const input={latitude:context.latitude,longitude:context.longitude,fine:$('sky-terrain-detail').value==='fine',eyeHeight:Number($('sky-eye-height').value)};
     const key=JSON.stringify(input);if(!force&&key===terrainKey)return;
     terrainWorker?.terminate();terrainWorker=null;terrain=null;terrainPoints=[];terrainMaskKey='';terrainKey=key;
@@ -88,22 +91,23 @@ function initSky(api){
       terrainCache.set(key,profile);if(terrainCache.size>12)terrainCache.delete(terrainCache.keys().next().value);
       const complete=profile.valid.filter(Boolean).length===3600;
       $('sky-terrain-status').textContent=`Sonny · ground ${profile.ground.toFixed(0)} m · eye +${profile.eyeHeight} m · ${profile.resolution}″ nearby / 3″ far · 150 km${complete?'':' · incomplete coverage; gaps are unknown'}`;
-      $('sky-terrain-retry').hidden=complete;updateData();requestDraw();
+      $('sky-terrain-retry').hidden=complete;publishTerrain();updateData();requestDraw();
     }
     if(!force&&terrainCache.has(key)){accept(terrainCache.get(key));return;}
-    $('sky-terrain-status').textContent='Loading Sonny terrain… geometric horizon shown while loading.';updateData();requestDraw();
+    $('sky-terrain-status').textContent='Loading Sonny terrain… geometric horizon shown while loading.';publishTerrain();updateData();requestDraw();
     try{
       terrainWorker=new Worker(new URL('./terrain-worker.mjs',import.meta.url),{type:'module'});
       const worker=terrainWorker;
-      const failed=text=>{if(worker!==terrainWorker)return;worker.terminate();terrainWorker=null;$('sky-terrain-status').textContent=`${text} Geometric horizon shown.`;$('sky-terrain-retry').hidden=false;};
-      worker.onmessage=({data})=>{if(worker!==terrainWorker)return;if(data.type==='progress')$('sky-terrain-status').textContent=data.text;else if(data.type==='done'){worker.terminate();terrainWorker=null;accept(data.profile);}else failed(data.text);};
+      const failed=text=>{if(worker!==terrainWorker)return;worker.terminate();terrainWorker=null;$('sky-terrain-status').textContent=`${text} Geometric horizon shown.`;$('sky-terrain-retry').hidden=false;publishTerrain();};
+      worker.onmessage=({data})=>{if(worker!==terrainWorker)return;if(data.type==='progress'){$('sky-terrain-status').textContent=data.text;window.dispatchEvent(new CustomEvent('deep:terrain-progress',{detail:data.text}));}else if(data.type==='done'){worker.terminate();terrainWorker=null;accept(data.profile);}else failed(data.text);};
       worker.onerror=()=>failed('Terrain calculation failed.');worker.postMessage(input);
-    }catch{$('sky-terrain-status').textContent='Terrain requires a browser with module workers and decompression support. Geometric horizon shown.';$('sky-terrain-retry').hidden=false;}
+    }catch{$('sky-terrain-status').textContent='Terrain requires a browser with module workers and decompression support. Geometric horizon shown.';$('sky-terrain-retry').hidden=false;publishTerrain();}
   }
-  $('sky-terrain').addEventListener('change',()=>{terrainMaskKey='';if(!terrainEnabled()){terrainWorker?.terminate();terrainWorker=null;terrainKey='';$('sky-terrain-status').textContent='Terrain off · geometric horizon';}else startTerrain();updateData();requestDraw();});
+  $('sky-terrain').addEventListener('change',()=>{terrainMaskKey='';if(!terrainEnabled()){terrainWorker?.terminate();terrainWorker=null;terrainKey='';$('sky-terrain-status').textContent='Terrain off · geometric horizon';}else startTerrain();publishTerrain();updateData();requestDraw();});
   $('sky-terrain-detail').addEventListener('change',()=>startTerrain());
   $('sky-eye-height').addEventListener('change',()=>{if($('sky-eye-height').value&&$('sky-eye-height').checkValidity())startTerrain();else{$('sky-eye-height').reportValidity();$('sky-eye-height').value=String(terrain?.eyeHeight??2);}});
   $('sky-terrain-retry').addEventListener('click',()=>startTerrain(true));
+  window.addEventListener('deep:terrain-request',e=>{$('sky-terrain').checked=true;startTerrain(!!e.detail?.retry);publishTerrain();});
   const grid=[];
   for(const a of [-60,-30,0,30,60])grid.push({points:Array.from({length:121},(_,i)=>direction(i*3,a)),horizon:a===0});
   for(let a=0;a<360;a+=30)grid.push({points:Array.from({length:61},(_,i)=>direction(a,i*3-90)),horizon:false});
@@ -139,7 +143,7 @@ function initSky(api){
   $('sky-pa').addEventListener('input',e=>{if(!e.target.value||!e.target.checkValidity())return;pa=+e.target.value;updateData();requestDraw();});
   $('sky-below').addEventListener('change',()=>requestDraw());
   $('sky-catalog-object').addEventListener('click',()=>{
-    $('search').value='';$('type').value='';$('search').dispatchEvent(new Event('input'));setTab(false);
+    window.DeepSkyPlanner?.resetFilters();$('search').value='';$('type').value='';$('search').dispatchEvent(new Event('input'));setTab(false);
     const row=$(`m${selected}`);row.scrollIntoView({block:'start',behavior:reducedMotion.matches?'instant':'smooth'});row.querySelector('.number').focus({preventScroll:true});
   });
   $('sky-reset').addEventListener('click',()=>{mode='globe';zoom=1;az=25;alt=25;tween=null;trackTarget=false;$('sky-globe').setAttribute('aria-pressed','true');$('sky-observer').setAttribute('aria-pressed','false');requestDraw();});
@@ -176,21 +180,21 @@ function initSky(api){
     const d=lookup.get(selected),v=objects.find(o=>o.d.id===selected).v,a=angles(v);
     cameraPoints=cameraFrame(d.ra_deg,d.dec_deg,api.fieldWidth,api.fieldHeight,pa).map(p=>local(api.precess(p.ra,p.dec,ms)));
     equator=Array.from({length:121},(_,i)=>local({ra:i*3,dec:0}));northPole=local({ra:0,dec:90});
-    $('sky-target').value=String(selected);$('sky-object-id').textContent=`M${selected}`;$('sky-object-name').textContent=d.name||`NGC ${d.ngc}`;$('sky-object-type').textContent=`${d.label} · ${d.con}`;
+    $('sky-target').value=String(selected);$('sky-object-id').textContent=d.designation;$('sky-object-name').textContent=d.name||d.designation;$('sky-object-type').textContent=`${d.label} · ${d.con}`;
     $('sky-alt').textContent=`${a.alt.toFixed(1)}°`;$('sky-az').textContent=`${a.az.toFixed(1)}°`;
     const terrainAltitude=terrainLimit(v),clearance=terrainAltitude===null?null:a.alt-terrainAltitude;
     $('sky-visibility').textContent=clearance===null?(terrainEnabled()&&terrain?'Terrain visibility unknown':a.alt>=0?'Above the geometric horizon':`Below geometric horizon by ${(-a.alt).toFixed(1)}°`):clearance>=0?`${clearance.toFixed(2)}° above terrain`:`Behind terrain by ${(-clearance).toFixed(2)}°`;
     $('sky-visibility').classList.toggle('below',clearance===null?a.alt<0:clearance<0);
     const edgeClearances=cameraPoints.map(p=>{const limit=terrainLimit(p);return limit===null?null:angles(p).alt-limit;});
     $('sky-terrain-clearance').textContent=clearance===null?'':`Terrain at target: ${terrainAltitude.toFixed(2)}°. ${edgeClearances.some(c=>c===null)?'Camera edge: terrain coverage incomplete.':`Lowest camera-edge clearance: ${Math.min(...edgeClearances).toFixed(2)}°.`}`;
-    $('sky-size').textContent=`${d.size_display} · visual mag ${d.mag.toFixed(1)}`;
+    $('sky-size').textContent=`${d.size_display} · ${d.mag_band||'Optical'} mag ${(d.mag==null?'unknown':d.mag.toFixed(1))}`;
     $('sky-camera-info').textContent=`Camera · 2.82° × 1.89° · PA ${pa}°`;
     const p=api.localParts(ms);const offset=new Intl.DateTimeFormat('en',{timeZone:context.timeZone,timeZoneName:'shortOffset'}).formatToParts(ms).find(p=>p.type==='timeZoneName')?.value;
     $('sky-time-label').textContent=`${p.day}.${p.month}.${p.year} · ${p.hour}:${p.minute} · ${context.timeZone} (${offset})`;
     $('sky-time').value=String((ms-context.start)/60000);$('sky-time').setAttribute('aria-valuetext',$('sky-time-label').textContent);
     const solarAlt=angles(sun).alt;$('sky-day-state').textContent=`${skyState(solarAlt)} · Sun ${solarAlt.toFixed(1)}°`;
-    const known=objects.filter(o=>terrainLimit(o.v)!==null);
-    $('sky-count').textContent=terrainEnabled()&&terrain?`${known.filter(o=>!obscured(o.v)).length} above terrain · ${110-known.length} unknown`:`${objects.filter(o=>o.v[1]>=0).length} / 110 above geometric horizon`;
+    const shown=objects.filter(o=>filteredIds.has(o.d.id)),known=shown.filter(o=>terrainLimit(o.v)!==null);
+    $('sky-count').textContent=terrainEnabled()&&terrain?`${known.filter(o=>!obscured(o.v)).length} above terrain · ${shown.length-known.length} unknown`:`${shown.filter(o=>o.v[1]>=0).length} / ${shown.length} above geometric horizon`;
     if(trackTarget&&!tween){az=a.az;alt=clamp(a.alt,-89.5,89.5);}
     dirty=true;earthDirty=true;
   }
@@ -213,7 +217,7 @@ function initSky(api){
     if(+p.hour<12){const [y,m,d]=date.split('-').map(Number);date=new Date(Date.UTC(y,m-1,d-1,12)).toISOString().slice(0,10);}
     api.setNightDate(date);ms=now;updateData();requestDraw();
   });
-  window.addEventListener('messier:context',()=>{const previous=context;context=api.getContext();if(context.date!==previous.date||context.timeZone!==previous.timeZone)ms=context.midnight;ms=clamp(ms,context.start,context.end);if(context.latitude!==previous.latitude||context.longitude!==previous.longitude){terrainWorker?.terminate();terrainWorker=null;terrain=null;terrainKey='';terrainPoints=[];terrainMaskKey='';startTerrain();}rebuildTime();updateData();requestDraw();});
+  window.addEventListener('messier:context',()=>{const previous=context;context=api.getContext();if(context.date!==previous.date||context.timeZone!==previous.timeZone)ms=context.midnight;ms=clamp(ms,context.start,context.end);if(context.latitude!==previous.latitude||context.longitude!==previous.longitude){terrainWorker?.terminate();terrainWorker=null;terrain=null;terrainKey='';terrainPoints=[];terrainMaskKey='';publishTerrain();if(active||document.getElementById('tonight')?.checked)startTerrain();}rebuildTime();updateData();requestDraw();});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(frameId);frameId=0;lastTime=0;}else requestDraw();});
 
   function resize(){
@@ -282,7 +286,7 @@ function initSky(api){
     label('Zenith',scale([0,1,0],mode==='globe'?1.06:1));label('NCP',northPole,'#91a6c0',8);
     if(mode==='observer'&&alt<0){ctx.fillStyle='#d3b7a3';ctx.font='14px system-ui';ctx.fillText('Below your geometric horizon',18,h-21);}
     // Markers have constant screen size; only the camera field has angular size.
-    const visible=objects.map(o=>({...o,p:proj(o.v)})).filter(o=>o.p&&o.p.x>=-10&&o.p.x<=w+10&&o.p.y>=50&&o.p.y<=h-10&&($('sky-below').checked||!obscured(o.v)));
+    const visible=objects.filter(o=>filteredIds.has(o.d.id)).map(o=>({...o,p:proj(o.v)})).filter(o=>o.p&&o.p.x>=-10&&o.p.x<=w+10&&o.p.y>=50&&o.p.y<=h-10&&($('sky-below').checked||!obscured(o.v)));
     visible.sort((a,b)=>(a.d.id===selected?1:b.d.id===selected?-1:a.p.z-b.p.z));hitTargets=[];
     for(const o of visible){
       const isSelected=o.d.id===selected,r=isSelected?5:3.3;ctx.save();ctx.globalAlpha=mode==='globe'&&o.p.z<0?.35:1;
@@ -291,10 +295,10 @@ function initSky(api){
       if(isSelected){ctx.setLineDash([]);ctx.beginPath();ctx.arc(o.p.x,o.p.y,11,0,Math.PI*2);ctx.stroke();}ctx.restore();
       hitTargets.push({x:o.p.x,y:o.p.y,id:o.d.id,labelX:-999,labelY:-999,labelWidth:0});
     }
-    if($('sky-below').checked||!obscured(objects.find(o=>o.d.id===selected).v))curve(cameraPoints,'#f3aa77',1.8);
+    if(filteredIds.has(selected)&&($('sky-below').checked||!obscured(objects.find(o=>o.d.id===selected).v)))curve(cameraPoints,'#f3aa77',1.8);
     // Prefer the selected object, then foreground labels, during collision removal.
     visible.sort((a,b)=>(a.d.id===selected?-1:b.d.id===selected?1:b.p.z-a.p.z));
-    for(const o of visible){const box=label(`M${o.d.id}`,o.v,o.d.id===selected?'#ffc79f':color(o.d),10,o.d.id===selected);if(box){const hit=hitTargets.find(p=>p.id===o.d.id);hit.labelX=box.x;hit.labelY=box.y+9;hit.labelWidth=box.width;}}
+    for(const o of visible){if(o.d.collection==='extended'&&o.d.id!==selected&&(mode==='globe'?zoom<1.6:fov>35))continue;const box=label(o.d.designation,o.v,o.d.id===selected?'#ffc79f':color(o.d),10,o.d.id===selected);if(box){const hit=hitTargets.find(p=>p.id===o.d.id);hit.labelX=box.x;hit.labelY=box.y+9;hit.labelWidth=box.width;}}
     const sp=proj(sun);if(sp&&sp.x>0&&sp.x<w&&sp.y>55&&sp.y<h){ctx.globalAlpha=mode==='globe'&&sp.z<0?.4:1;ctx.beginPath();ctx.arc(sp.x,sp.y,6,0,2*Math.PI);ctx.fillStyle='#ffd48a';ctx.shadowColor='#ffc06a';ctx.shadowBlur=16;ctx.fill();ctx.shadowBlur=0;ctx.globalAlpha=1;label('Sun',sun,'#ffcf8c',11);}
     if(mode==='globe'){const origin=proj([0,0,0]);ctx.fillStyle='#b1e8e4';ctx.beginPath();ctx.arc(origin.x,origin.y,3,0,Math.PI*2);ctx.fill();}
     $('sky-view-name').textContent=mode==='globe'?'Sky globe':'Observer view';$('sky-view-direction').textContent=mode==='globe'?'Horizon disc · all sky directions':`Az ${wrap(az).toFixed(0)}° · Alt ${alt.toFixed(0)}° · vertical field ${fov.toFixed(1)}°`;
@@ -321,6 +325,14 @@ function initSky(api){
     earthCtx.fillStyle='#d8ffff';earthCtx.beginPath();earthCtx.arc(c,c,3,0,Math.PI*2);earthCtx.fill();
     const solarAlt=angles(sun).alt;earthCanvas.setAttribute('aria-label',`Earth day and night boundary. Observer at centre, Sun altitude ${solarAlt.toFixed(1)} degrees, ${solarAlt>=0?'day side':'night side'}.`);
   }
+  const emptySelection=document.createElement('p');emptySelection.id='sky-selection-empty';emptySelection.hidden=true;emptySelection.textContent='No targets match the shared filters. Adjust the selection above.';document.querySelector('.sky-side').prepend(emptySelection);
+  window.addEventListener('deep:selection',()=>{
+    filteredIds=new Set(api.visibleIds());const matches=api.catalog.filter(d=>filteredIds.has(d.id));
+    $('sky-target').replaceChildren(...matches.map(d=>{const option=document.createElement('option');option.value=d.id;option.textContent=d.designation+(d.name?' · '+d.name:'');return option;}));
+    $('sky-target').disabled=!matches.length;emptySelection.hidden=!!matches.length;document.querySelector('.sky-side').classList.toggle('no-selection',!matches.length);
+    if(matches.length&&!filteredIds.has(selected))select(matches[0].id);else{updateData();requestDraw();}
+  });
+  initDeepPlanner(api);
   rebuildTime();updateData();
   // The first 3D view opens in a stable globe overview; selection then animates.
   if(location.hash==='#3d-sky')setTab(true);
