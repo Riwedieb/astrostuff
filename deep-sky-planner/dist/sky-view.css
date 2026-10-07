@@ -10,6 +10,9 @@ body.sky-active .astro-controls p{display:none}body.sky-active .astro-controls{m
 .sky-toolbar select{width:265px;max-width:100%}.sky-toolbar input{width:85px}
 .sky-toolbar .sky-target{flex:1}.sky-toolbar .sky-target select{width:100%}
 .sky-toolbar .action[aria-pressed=true]{border-color:#80cacc;background:#254653;color:#d6ffff}
+.sky-terrain-controls{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;padding:12px 18px;border-top:1px solid var(--line);background:#14202c;font-size:14px}
+.sky-terrain-controls label{display:flex;gap:6px;flex-direction:column;max-width:100%;font-size:14px}.sky-terrain-controls .sky-check{flex-direction:row;align-items:center}
+.sky-terrain-controls input[type=number]{width:110px}.sky-terrain-controls select{max-width:100%;font-size:14px}.sky-terrain-controls p{flex-basis:100%;margin:0;color:#b1cf9b;font-size:14px;min-height:20px}
 .sky-workspace{display:grid;grid-template-columns:minmax(0,1fr) 265px}
 .sky-stage{position:relative;min-width:0;background:#070e19;overflow:hidden}
 #sky-canvas{display:block;width:100%;height:clamp(440px,54vw,650px);touch-action:none;cursor:grab;outline-offset:-4px}
